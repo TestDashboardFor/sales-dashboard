@@ -8,6 +8,15 @@ sample data set that is also available on Kaggle. The copy in this repository
 (`backend/data/superstore.csv`) comes from a public Hugging Face mirror, so no Kaggle login is
 needed to run the project.
 
+## Live demo
+
+https://sales-dashboard-web-ulyq.onrender.com
+
+Hosted on Render's free tier (Frankfurt): the app is two web services (Next.js, FastAPI) plus a
+PostgreSQL database, deployed from this repository. After 15 minutes without traffic the services
+go to sleep, so **the first request can take up to a minute**; later ones are fast. Anyone can
+register an account; the data is the public sample set, and orders can be edited freely.
+
 ## Features
 
 - Sign up / sign in / sign out with username and password
