@@ -1,7 +1,12 @@
 "use client";
 
-import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { useState } from "react";
+import WakeBanner from "@/components/WakeBanner";
 import { api, ApiError } from "@/lib/api";
 
 // Clearing the cookie first avoids a /login <-> /dashboard redirect loop with a stale token.
@@ -22,5 +27,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: { queries: { staleTime: 30_000, retry: false } },
       }),
   );
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      {children}
+      <WakeBanner />
+    </QueryClientProvider>
+  );
 }

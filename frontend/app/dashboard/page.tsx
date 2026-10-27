@@ -30,7 +30,10 @@ export default function DashboardPage() {
   }
 
   const toggle = (key: "category" | "region") => (label: string) =>
-    setFilters({ ...filters, [key]: filters[key] === label ? undefined : label });
+    setFilters({
+      ...filters,
+      [key]: filters[key] === label ? undefined : label,
+    });
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4 md:p-6">
@@ -40,7 +43,9 @@ export default function DashboardPage() {
           <p className="text-sm text-stone-500">Superstore orders, 2014–2017</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="hidden text-stone-600 sm:inline">{me?.username}</span>
+          <span className="hidden text-stone-600 sm:inline">
+            {me?.username}
+          </span>
           <Button variant="secondary" onClick={logout}>
             Log out
           </Button>

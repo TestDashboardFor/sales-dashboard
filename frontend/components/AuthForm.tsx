@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Card, Field, inputClass } from "./ui";
 
@@ -12,19 +12,8 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [slow, setSlow] = useState(false);
 
   const isLogin = mode === "login";
-
-  // Free hosting puts the API to sleep; the first request can take about a minute.
-  useEffect(() => {
-    if (!pending) return;
-    const timer = setTimeout(() => setSlow(true), 4000);
-    return () => {
-      clearTimeout(timer);
-      setSlow(false);
-    };
-  }, [pending]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,12 +65,6 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           {error && (
             <p role="alert" className="text-sm text-red-700">
               {error}
-            </p>
-          )}
-          {slow && (
-            <p role="status" className="text-sm text-stone-500">
-              The server was asleep and is waking up. This can take up to a
-              minute.
             </p>
           )}
 

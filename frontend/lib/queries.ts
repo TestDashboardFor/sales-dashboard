@@ -10,10 +10,18 @@ export const useOptions = () =>
   useQuery({ queryKey: ["options"], queryFn: api.options });
 
 export const useSummary = (f: Filters) =>
-  useQuery({ queryKey: ["summary", f], queryFn: () => api.summary(f), ...keep });
+  useQuery({
+    queryKey: ["summary", f],
+    queryFn: () => api.summary(f),
+    ...keep,
+  });
 
 export const useTimeseries = (f: Filters) =>
-  useQuery({ queryKey: ["timeseries", f], queryFn: () => api.timeseries(f), ...keep });
+  useQuery({
+    queryKey: ["timeseries", f],
+    queryFn: () => api.timeseries(f),
+    ...keep,
+  });
 
 export const useBreakdown = (
   by: "category" | "region" | "segment" | "sub_category",

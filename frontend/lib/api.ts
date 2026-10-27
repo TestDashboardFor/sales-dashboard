@@ -10,6 +10,7 @@ import type {
   TimeseriesPoint,
   User,
 } from "./types";
+import { wakeApi } from "./wake";
 
 export class ApiError extends Error {
   constructor(
@@ -35,11 +36,20 @@ function errorMessage(detail: unknown): string {
   return "Something went wrong";
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+const send = (path: string, init?: RequestInit) =>
+  fetch(`/api${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let res = await send(path, init);
+  // 502/503 come straight from the host's edge when the free API is asleep, so
+  // the request never reached it and is safe to repeat once it is awake.
+  if (res.status === 502 || res.status === 503) {
+    await wakeApi();
+    res = await send(path, init);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new ApiError(res.status, errorMessage(body?.detail));
@@ -63,13 +73,17 @@ export const api = {
   summary: (f: Filters) => request<Summary>(`/stats/summary${toQuery(f)}`),
   timeseries: (f: Filters) =>
     request<TimeseriesPoint[]>(`/stats/timeseries${toQuery(f)}`),
-  breakdown: (by: "category" | "region" | "segment" | "sub_category", f: Filters) =>
-    request<BreakdownItem[]>(`/stats/breakdown${toQuery({ ...f, by })}`),
+  breakdown: (
+    by: "category" | "region" | "segment" | "sub_category",
+    f: Filters,
+  ) => request<BreakdownItem[]>(`/stats/breakdown${toQuery({ ...f, by })}`),
   options: () => request<FilterOptions>("/stats/options"),
 
   orders: (q: OrderQuery) => request<OrderPage>(`/orders${toQuery(q)}`),
-  createOrder: (data: OrderInput) => request<Order>("/orders", json("POST", data)),
+  createOrder: (data: OrderInput) =>
+    request<Order>("/orders", json("POST", data)),
   updateOrder: (id: number, data: Partial<OrderInput>) =>
     request<Order>(`/orders/${id}`, json("PATCH", data)),
-  deleteOrder: (id: number) => request<void>(`/orders/${id}`, { method: "DELETE" }),
+  deleteOrder: (id: number) =>
+    request<void>(`/orders/${id}`, { method: "DELETE" }),
 };
