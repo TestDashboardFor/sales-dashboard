@@ -8,15 +8,19 @@ import { Button, Card, Field, inputClass } from "./ui";
 
 export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const isLogin = mode === "login";
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Read the fields from the DOM, not from state: anything typed or autofilled
+    // before hydration finished is in the inputs but never reached React state.
+    const data = new FormData(e.currentTarget);
+    const username = String(data.get("username") ?? "");
+    const password = String(data.get("password") ?? "");
+
     setError(null);
     setPending(true);
     try {
@@ -36,12 +40,16 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         </h1>
         <p className="mb-5 text-sm text-stone-500">Sales Dashboard</p>
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {/* method="post" keeps credentials out of the URL if submitted before hydration */}
+        <form
+          method="post"
+          onSubmit={onSubmit}
+          className="flex flex-col gap-4"
+        >
           <Field label="Username">
             <input
               className={inputClass}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="username"
               autoComplete="username"
               minLength={3}
               maxLength={50}
@@ -52,9 +60,8 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           <Field label="Password">
             <input
               className={inputClass}
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               autoComplete={isLogin ? "current-password" : "new-password"}
               minLength={8}
               maxLength={128}
