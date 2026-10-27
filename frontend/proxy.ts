@@ -4,9 +4,15 @@ import type { NextRequest } from "next/server";
 const AUTH_PAGES = ["/login", "/register"];
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.has("access_token");
+  const { pathname, search } = request.nextUrl;
 
+  // Read at request time, so one image works against any backend address.
+  if (pathname.startsWith("/api/")) {
+    const apiUrl = process.env.API_URL ?? "http://localhost:8000";
+    return NextResponse.rewrite(new URL(`${pathname.slice(4)}${search}`, apiUrl));
+  }
+
+  const hasSession = request.cookies.has("access_token");
   if (!hasSession && pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -17,5 +23,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/api/:path*", "/dashboard/:path*", "/login", "/register"],
 };

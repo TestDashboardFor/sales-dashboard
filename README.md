@@ -90,12 +90,13 @@ The frontend proxies `/api/*` to `http://localhost:8000` by default; set `API_UR
 | Variable | Used by | Description |
 |---|---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | db | Database credentials for the compose `db` service |
-| `DATABASE_URL` | backend | SQLAlchemy URL, e.g. `postgresql+psycopg://app:app@db:5432/sales` |
+| `DATABASE_URL` | backend | PostgreSQL URL, e.g. `postgresql+psycopg://app:app@db:5432/sales`. Plain `postgres://` / `postgresql://` URLs from hosting providers are accepted too |
 | `JWT_SECRET` | backend | Secret used to sign tokens. **Change it outside local development** |
 | `JWT_EXPIRE_MINUTES` | backend | Optional, token lifetime, default 1440 (24 h) |
 | `COOKIE_SECURE` | backend | Optional, set to `true` when served over HTTPS so the cookie is `Secure` |
 | `FRONTEND_ORIGIN` | backend | Origin allowed by CORS, default `http://localhost:3000` |
-| `API_URL` | frontend | Backend address used by the `/api` rewrite. It is read **at build time** (`http://backend:8000` in compose) |
+| `API_URL` | frontend | Backend address that `/api/*` is proxied to. Read **at request time**, so one image works against any backend (`http://backend:8000` in compose) |
+| `PORT` | backend, frontend | Port to listen on. Hosting platforms set it; defaults are 8000 and 3000 |
 
 ## Tests
 
@@ -103,7 +104,7 @@ The frontend proxies `/api/*` to `http://localhost:8000` by default; set `API_UR
 docker compose exec backend pytest
 ```
 
-23 tests cover registration and login, protected endpoints, CRUD on orders, validation, pagination,
+26 tests cover registration and login, protected endpoints, CRUD on orders, validation, pagination,
 sorting, filtering, search and the correctness of the aggregations against known data. They run
 against a separate `sales_test` database that is created automatically, and every test runs in a
 rolled-back transaction, so the application data is never touched.
@@ -183,7 +184,7 @@ docker-compose.yml
 - **"Orders" counts distinct `order_id`.** One order contains several lines, so the KPI shows 5,009
   orders from 9,994 rows.
 - **Token in an httpOnly cookie** rather than `localStorage`, so page scripts cannot read it. The
-  browser only talks to its own origin: Next.js rewrites `/api/*` to the backend, so the cookie is
+  browser only talks to its own origin: the Next.js proxy forwards `/api/*` to the backend, so the cookie is
   first-party (`SameSite=Lax`) and CORS is not needed in the normal setup.
 - **Route protection in two layers.** `proxy.ts` (the Next.js 16 name for middleware) only checks
   that a session cookie exists, to avoid showing the dashboard shell to anonymous visitors. The real
@@ -210,7 +211,7 @@ The stack is three containers (database, backend, frontend). For a hosted deploy
 
 1. Provision PostgreSQL and set `DATABASE_URL` for the backend.
 2. Set a strong `JWT_SECRET`, `COOKIE_SECURE=true` and `FRONTEND_ORIGIN` to the public frontend URL.
-3. Build the frontend with `API_URL` pointing at the backend's internal or public URL; it is baked
-   into the build because Next.js evaluates rewrites at build time.
-4. The backend image runs `alembic upgrade head` and the seed before starting `uvicorn`, so no manual
+3. Set `API_URL` on the frontend to the backend's URL. It is read at runtime, so the same image can
+   be promoted between environments without a rebuild.
+4. The backend image runs `alembic upgrade head` and the seed before starting `uvicorn` on `$PORT`, so no manual
    database step is needed.
