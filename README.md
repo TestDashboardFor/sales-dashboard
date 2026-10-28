@@ -14,7 +14,8 @@ https://sales-dashboard-web-ulyq.onrender.com
 
 Hosted on Render's free tier (Frankfurt): the app is two web services (Next.js, FastAPI) plus a
 PostgreSQL database, deployed from this repository. After 15 minutes without traffic the services
-go to sleep, so **the first request can take up to a minute**; later ones are fast. Anyone can
+go to sleep, so **the first request can take up to a minute**; later ones are fast. The app
+detects this, shows a "server is waking up" banner and retries on its own. Anyone can
 register an account; the data is the public sample set, and orders can be edited freely.
 
 ## Features
@@ -198,6 +199,11 @@ docker-compose.yml
 - **Route protection in two layers.** `proxy.ts` (the Next.js 16 name for middleware) only checks
   that a session cookie exists, to avoid showing the dashboard shell to anonymous visitors. The real
   check is the API: on a 401 the client clears the cookie and goes to `/login`.
+- **Waking a sleeping API from the browser.** On Render's free tier a request that the frontend proxy
+  sends to a sleeping API gets an immediate 502 and does *not* wake it, while a request from outside
+  the host's network does. On a 502/503 the client therefore pings the API directly (its address comes
+  from the runtime `/config` endpoint), waits, and repeats the request once. Concurrent failures share
+  one ping.
 - **Same response for "unknown user" and "wrong password"**, so usernames cannot be enumerated.
 - **Sorting is whitelisted.** `sort_by` is a `Literal` of known columns and `by=` in the breakdown
   is a fixed set, so request parameters never reach SQL as identifiers.
