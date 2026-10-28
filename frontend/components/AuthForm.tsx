@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { api } from "@/lib/api";
 import { Button, Card, Field, inputClass } from "./ui";
 
@@ -10,6 +10,14 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  // False while the server-rendered HTML is not interactive yet. A submit in
+  // that window would be a native form post that never reaches our handler.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const isLogin = mode === "login";
 
@@ -41,11 +49,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         <p className="mb-5 text-sm text-stone-500">Sales Dashboard</p>
 
         {/* method="post" keeps credentials out of the URL if submitted before hydration */}
-        <form
-          method="post"
-          onSubmit={onSubmit}
-          className="flex flex-col gap-4"
-        >
+        <form method="post" onSubmit={onSubmit} className="flex flex-col gap-4">
           <Field label="Username">
             <input
               className={inputClass}
@@ -75,7 +79,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
             </p>
           )}
 
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || !hydrated}>
             {pending ? "Please wait…" : isLogin ? "Sign in" : "Sign up"}
           </Button>
         </form>
